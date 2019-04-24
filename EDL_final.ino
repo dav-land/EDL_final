@@ -25,6 +25,8 @@ void setup() {
   Serial.begin(115200);
   Serial.println("Starting");
 
+
+//This line breaks the ability for the robot to drive
   pixy.init();
   
 pinMode(pinON, INPUT); 
@@ -74,7 +76,10 @@ void loop() {
   turnRight(1.08,80);
   delay(1000);
   turnLeft(1.11, 80);
-  
+
+  /**
+   * This chunk of code should make the robot turn to face the detected object
+   */
   //get the detected objects from the pixy
 //  pixy.ccc.getBlocks();
 //
