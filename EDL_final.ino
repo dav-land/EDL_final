@@ -1,20 +1,9 @@
-#include <ZumoMotors.h>
 #include <Pixy2.h>
-#include <Pixy2Line.h>
-#include <Pixy2Video.h>
-#include <TPixy2.h>
-#include <Pixy2CCC.h>
-#include <Pixy2I2C.h>
-#include <Pixy2UART.h>
-#include <ZumoBuzzer.h>
-#include <PIDLoop.h>
-#include <Pixy2SPI_SS.h>
-
+#include <SPI.h>
 /*
- * Only incudes stock code for moving the robot
- */
+   Only incudes stock code for moving the robot
+*/
 
-// define pins
 const int pinEnc_L = 2;
 const int pinEnc_R = 3;
 const int pinON = 6;         // connect pin 6 to ON/OFF switch, active HIGH
@@ -29,10 +18,16 @@ const int pinLED = 13;
 volatile int enc_count_L = 0; // "volatile" means the variable is stored in RAM
 volatile int enc_count_R = 0; //sets encoder count to zero 
 
+Pixy2 pixy;
+
 // setup pins and initial values
 void setup() {
-  Serial.begin(9600);
-  pinMode(pinON, INPUT); 
+  Serial.begin(115200);
+  Serial.println("Starting");
+
+  pixy.init();
+  
+pinMode(pinON, INPUT); 
   pinMode(pinCW_L, OUTPUT); //sets pins 7-12 as outputs 
   pinMode(pinCC_L, OUTPUT);
   pinMode(pinRef_L, OUTPUT);
@@ -58,7 +53,7 @@ void setup() {
     count_Left is the interrupt service routine attached to Interrupt 0 (pin 2)
   */
   attachInterrupt(0, count_Left, FALLING); //attaches interrupt to falling edge encoder pulse
-  attachInterrupt(1, count_Right, FALLING); 
+  attachInterrupt(1, count_Right, FALLING);
 }
 
 /*
@@ -75,27 +70,54 @@ void count_Right() {
 }
 
 void loop() {
-  if (digitalRead(pinON)) {
-    int speed = 80; //speed to be used is 80/255
-    delay(1000); 
-    forward(24, speed); //move forward 24 inches
-    delay(1000);
-    turnRight(1.08, speed); //turn right first parameter is tuned to make it turn exactly 90 degrees
-    delay(1000);
-    forward(24, speed); //move forward 24 inches
-    delay(1000);
-    turnLeft(1.14, speed); //turn left first parameter is tuned to make it turn exactly 90 degrees
-    delay(2000);
-    digitalWrite(pinCW_R, LOW); //right wheel stop spinning clockwise
-    digitalWrite(pinCC_L, LOW); //left wheel stop spinning counter-clockwise 
-    digitalWrite(pinCW_L, LOW); //left wheel stop spinning clockwise
-    digitalWrite(pinCC_R, LOW); //right wheel stop spinning counter-clockwise
-  }else{
-    digitalWrite(pinCW_R, LOW);
-    digitalWrite(pinCC_L, LOW);
-    digitalWrite(pinCW_L, LOW);
-    digitalWrite(pinCC_R, LOW);
-  }
+  delay(1000);
+  turnRight(1.08,80);
+  delay(1000);
+  turnLeft(1.11, 80);
+  
+  //get the detected objects from the pixy
+//  pixy.ccc.getBlocks();
+//
+//  if (pixy.ccc.numBlocks) {
+//    if (pixy.ccc.blocks[0].m_x < 100) {
+//      Serial.println("turning Left");
+//      turnLeft(.2, 160);
+//    } else if (pixy.ccc.blocks[0].m_x > 200) {
+//      Serial.println("Turning Right");
+//      turnRight(.2, 160);
+//    }
+//  } else {
+//    digitalWrite(pinCW_R, LOW);
+//    digitalWrite(pinCC_L, LOW);
+//    digitalWrite(pinCW_L, LOW);
+//    digitalWrite(pinCC_R, LOW);
+//    Serial.println("Stopped");
+//  }
+
+
+
+
+  //  if (digitalRead(pinON)) {
+  //    int speed = 80; //speed to be used is 80/255
+  //    delay(1000);
+  //    forward(24, speed); //move forward 24 inches
+  //    delay(1000);
+  //    turnRight(1.08, speed); //turn right first parameter is tuned to make it turn exactly 90 degrees
+  //    delay(1000);
+  //    forward(24, speed); //move forward 24 inches
+  //    delay(1000);
+  //    turnLeft(1.14, speed); //turn left first parameter is tuned to make it turn exactly 90 degrees
+  //    delay(2000);
+  //    digitalWrite(pinCW_R, LOW); //right wheel stop spinning clockwise
+  //    digitalWrite(pinCC_L, LOW); //left wheel stop spinning counter-clockwise
+  //    digitalWrite(pinCW_L, LOW); //left wheel stop spinning clockwise
+  //    digitalWrite(pinCC_R, LOW); //right wheel stop spinning counter-clockwise
+  //  }else{
+  //    digitalWrite(pinCW_R, LOW);
+  //    digitalWrite(pinCC_L, LOW);
+  //    digitalWrite(pinCW_L, LOW);
+  //    digitalWrite(pinCC_R, LOW);
+  //  }
 
 }
 
