@@ -11,12 +11,12 @@ const int pinCW_L = 7;    // connect pin 7 to clock-wise PMOS gate
 const int pinCC_L = 8;    // connect pin 8 to counter clock-wise PMOS gate
 const int pinRef_L = 9; // connect pin 9 to speed reference (left)
 const int pinRef_R = 10; //connect pin 10 to speed reference (right)
-const int pinCW_R = 11; //connect pin 12 to clock-wise PMOS gate 
-const int pinCC_R = 12; //connect pin 13 to counter clock-wise PMOS gate
+const int pinCW_R = 4; //connect pin 12 to clock-wise PMOS gate
+const int pinCC_R = 5; //connect pin 13 to counter clock-wise PMOS gate
 const int pinLED = 13;
 // encoder counter variable
 volatile int enc_count_L = 0; // "volatile" means the variable is stored in RAM
-volatile int enc_count_R = 0; //sets encoder count to zero 
+volatile int enc_count_R = 0; //sets encoder count to zero
 
 Pixy2 pixy;
 
@@ -26,11 +26,11 @@ void setup() {
   Serial.println("Starting");
 
 
-//This line breaks the ability for the robot to drive
+  //This line breaks the ability for the robot to drive
   pixy.init();
-  
-pinMode(pinON, INPUT); 
-  pinMode(pinCW_L, OUTPUT); //sets pins 7-12 as outputs 
+
+  pinMode(pinON, INPUT);
+  pinMode(pinCW_L, OUTPUT); //sets pins 7-12 as outputs
   pinMode(pinCC_L, OUTPUT);
   pinMode(pinRef_L, OUTPUT);
   pinMode(pinCW_R, OUTPUT);
@@ -72,32 +72,36 @@ void count_Right() {
 }
 
 void loop() {
-  delay(1000);
-  turnRight(1.08,80);
-  delay(1000);
-  turnLeft(1.11, 80);
+  //  delay(1000);
+  //  turnRight(1.08,80);
+  //  delay(1000);
+  //  turnLeft(1.11, 80);
 
   /**
-   * This chunk of code should make the robot turn to face the detected object
-   */
+     This chunk of code should make the robot turn to face the detected object
+  */
   //get the detected objects from the pixy
-//  pixy.ccc.getBlocks();
-//
-//  if (pixy.ccc.numBlocks) {
-//    if (pixy.ccc.blocks[0].m_x < 100) {
-//      Serial.println("turning Left");
-//      turnLeft(.2, 160);
-//    } else if (pixy.ccc.blocks[0].m_x > 200) {
-//      Serial.println("Turning Right");
-//      turnRight(.2, 160);
-//    }
-//  } else {
-//    digitalWrite(pinCW_R, LOW);
-//    digitalWrite(pinCC_L, LOW);
-//    digitalWrite(pinCW_L, LOW);
-//    digitalWrite(pinCC_R, LOW);
-//    Serial.println("Stopped");
-//  }
+  pixy.ccc.getBlocks();
+
+  if (pixy.ccc.numBlocks) {
+    if (pixy.ccc.blocks[0].m_x < 130) {
+      if (pixy.ccc.blocks[0].m_x < 70)
+        turnRight(.03, 180);
+      else
+        turnRight(.01, 180);
+    } else if (pixy.ccc.blocks[0].m_x > 170) {
+      if (pixy.ccc.blocks[0].m_x > 220)
+        turnLeft(.03, 180);
+      else
+        turnLeft(.01, 180);
+    }
+  } else {
+    digitalWrite(pinCW_R, LOW);
+    digitalWrite(pinCC_L, LOW);
+    digitalWrite(pinCW_L, LOW);
+    digitalWrite(pinCC_R, LOW);
+    Serial.println("Stopped");
+  }
 
 
 
@@ -185,7 +189,7 @@ void turnLeft(float deg, int sp) { //deg is in degrees and sp is speed from 0-25
   enc_count_R = 0;
   enc_count_L = 0;
   float oneInch = (13 * 52) / (2 * PI * 2.55906);
-  double dist = deg * oneInch / 3 +1;//same logic as in turnRight
+  double dist = deg * oneInch / 3 + 1; //same logic as in turnRight
   analogWrite(pinRef_L, sp);
   analogWrite(pinRef_R, sp);
   while (enc_count_R  < dist * oneInch  || enc_count_L  < dist * oneInch) { //same logic as in forward
