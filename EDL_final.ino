@@ -11,31 +11,33 @@ const int pinTrig = 18;
 const int pinEcho = 19;
 const int pinEnc_L = 2;
 const int pinEnc_R = 3;
-const int pinServo = 6;
+const int pinServo = 9;
 const int pinCW_L = 7;    // connect pin 7 to clock-wise PMOS gate
 const int pinCC_L = 8;    // connect pin 8 to counter clock-wise PMOS gate
-const int pinRef_L = 9; // connect pin 9 to speed reference (left)
-const int pinRef_R = 10; //connect pin 10 to speed reference (right)
+const int pinRef_L = 6; // connect pin 9 to speed reference (left)
+const int pinRef_R = 5; //connect pin 10 to speed reference (right)
 const int pinCW_R = 4; //connect pin 12 to clock-wise PMOS gate
-const int pinCC_R = 5; //connect pin 13 to counter clock-wise PMOS gate
-const int pinLED = 13;
+const int pinCC_R = 1; //connect pin 13 to counter clock-wise PMOS gate
 // encoder counter variable
 volatile int enc_count_L = 0; // "volatile" means the variable is stored in RAM
 volatile int enc_count_R = 0; //sets encoder count to zero
+bool closed = false;
+int state = 1;
+
 
 Pixy2 pixy;
 Servo s;
 
 // setup pins and initial values
 void setup() {
-  Serial.begin(115200);
-  Serial.println("Starting");
+//  Serial.begin(115200);
+//  Serial.println("Starting");
 
 
   //This line breaks the ability for the robot to drive
   pixy.init();
 
-  s.attach(6);
+  s.attach(pinServo);
   pinMode(pinTrig, OUTPUT);
   pinMode(pinEcho, INPUT);
   pinMode(pinCW_L, OUTPUT); //sets pins 7-12 as outputs
@@ -44,9 +46,7 @@ void setup() {
   pinMode(pinCW_R, OUTPUT);
   pinMode(pinCC_R, OUTPUT);
   pinMode(pinRef_R, OUTPUT);
-  pinMode(pinLED, OUTPUT);            // on-board LED
 
-  digitalWrite(pinLED, LOW);          // turn LED off
   digitalWrite(pinCW_L, LOW);  // stop clockwise
   digitalWrite(pinCC_L, LOW);  // stop counter-clockwise
 
@@ -55,7 +55,8 @@ void setup() {
 
   analogWrite(pinRef_L, 200); // set speed reference, duty-cycle = 50/255
   analogWrite(pinRef_R, 200); // set speed reference, duty-cycle = 50/255
-  Serial.print("Starting");
+ // Serial.print("Starting");
+  open();
 
   /*
     Connect left-wheel encoder output to pin 2 (external Interrupt 0) via a 1k resistor
@@ -80,45 +81,68 @@ void count_Right() {
 }
 
 void loop() {
-  //  delay(1000);
-  //  turnRight(1.08,80);
-  //  delay(1000);
-  //  turnLeft(1.11, 80);
 
-  /**
-     This chunk of code should make the robot turn to face the detected object
-  */
-  //get the detected objects from the pixy
-  float dist = distance();
-  if (dist < 10 && dist > 1) {
-    s.write(100);
-  }else
+//  Serial.println(state);
+  if (state == 1) {
+    move(1);
+  }
+  if (state % 2 == 0) {
+    move(3);
+  }
+  if (state == 3) {
+    move(2);
+  }
+
+  if(state > 3){
+    state = 0;
+  }
+
+}
+
+void close() {
+  s.write(100);
+  closed = true;
+}
+
+void open() {
   s.write(0);
+  closed = false;
+}
 
+void move(int sig) {
+  int i;
+  pixy.ccc.getBlocks();
+ // Serial.println(pixy.ccc.numBlocks);
+  if (pixy.ccc.numBlocks == 0) {
+    turnLeft(.1, 150);
+    move(sig);
+  }
+  for (i = 0; i < pixy.ccc.numBlocks; i++) {
+    if (pixy.ccc.blocks[i].m_signature == sig) {
+      break;
+    }
 
-  //
-  //  pixy.ccc.getBlocks();
-  //
-  //  if (pixy.ccc.numBlocks) {
-  //    if (pixy.ccc.blocks[0].m_x < 130) {
-  //      if (pixy.ccc.blocks[0].m_x < 70)
-  //        turnRight(.03, 180);
-  //      else
-  //        turnRight(.01, 180);
-  //    } else if (pixy.ccc.blocks[0].m_x > 170) {
-  //      if (pixy.ccc.blocks[0].m_x > 220)
-  //        turnLeft(.03, 180);
-  //      else
-  //        turnLeft(.01, 180);
-  //    }
-  //  } else {
-  //    digitalWrite(pinCW_R, LOW);
-  //    digitalWrite(pinCC_L, LOW);
-  //    digitalWrite(pinCW_L, LOW);
-  //    digitalWrite(pinCC_R, LOW);
-  //    Serial.println("Stopped");
-  //  }
+  }
 
+  if (pixy.ccc.numBlocks) {
+    if (pixy.ccc.blocks[i].m_x < 130) {
+      if (pixy.ccc.blocks[i].m_x < 70)
+        turnRight(.03, 180);
+      else
+        turnRight(.01, 180);
+    } else if (pixy.ccc.blocks[i].m_x > 170) {
+      if (pixy.ccc.blocks[i].m_x > 220)
+        turnLeft(.03, 180);
+      else
+        turnLeft(.01, 180);
+    }
+    
+    float dist = distance();
+    if(dist < 7 && dist > 1){
+      state ++;
+      close();
+    }
+  }
 }
 
 float distance() {
@@ -148,10 +172,10 @@ void forward(float dist, int sp) { //distance is in inches and sp is speed from 
     if (enc_count_L > dist * oneInch) {
       digitalWrite(pinCC_L, LOW);
     }
-    Serial.println(enc_count_L);
-    Serial.println(enc_count_R);
-    Serial.println(oneInch * dist);
-    Serial.println();
+ //   Serial.println(enc_count_L);
+ //   Serial.println(enc_count_R);
+  //  Serial.println(oneInch * dist);
+  //  Serial.println();
 
   }
   digitalWrite(pinCW_R, LOW);
