@@ -1,12 +1,17 @@
+#include <Servo.h>
+
 #include <Pixy2.h>
 #include <SPI.h>
 /*
    Only incudes stock code for moving the robot
 */
 
+
+const int pinTrig = 18;
+const int pinEcho = 19;
 const int pinEnc_L = 2;
 const int pinEnc_R = 3;
-const int pinON = 6;         // connect pin 6 to ON/OFF switch, active HIGH
+const int pinServo = 6;
 const int pinCW_L = 7;    // connect pin 7 to clock-wise PMOS gate
 const int pinCC_L = 8;    // connect pin 8 to counter clock-wise PMOS gate
 const int pinRef_L = 9; // connect pin 9 to speed reference (left)
@@ -19,6 +24,7 @@ volatile int enc_count_L = 0; // "volatile" means the variable is stored in RAM
 volatile int enc_count_R = 0; //sets encoder count to zero
 
 Pixy2 pixy;
+Servo s;
 
 // setup pins and initial values
 void setup() {
@@ -29,7 +35,9 @@ void setup() {
   //This line breaks the ability for the robot to drive
   pixy.init();
 
-  pinMode(pinON, INPUT);
+  s.attach(6);
+  pinMode(pinTrig, OUTPUT);
+  pinMode(pinEcho, INPUT);
   pinMode(pinCW_L, OUTPUT); //sets pins 7-12 as outputs
   pinMode(pinCC_L, OUTPUT);
   pinMode(pinRef_L, OUTPUT);
@@ -81,55 +89,47 @@ void loop() {
      This chunk of code should make the robot turn to face the detected object
   */
   //get the detected objects from the pixy
-  pixy.ccc.getBlocks();
-
-  if (pixy.ccc.numBlocks) {
-    if (pixy.ccc.blocks[0].m_x < 130) {
-      if (pixy.ccc.blocks[0].m_x < 70)
-        turnRight(.03, 180);
-      else
-        turnRight(.01, 180);
-    } else if (pixy.ccc.blocks[0].m_x > 170) {
-      if (pixy.ccc.blocks[0].m_x > 220)
-        turnLeft(.03, 180);
-      else
-        turnLeft(.01, 180);
-    }
-  } else {
-    digitalWrite(pinCW_R, LOW);
-    digitalWrite(pinCC_L, LOW);
-    digitalWrite(pinCW_L, LOW);
-    digitalWrite(pinCC_R, LOW);
-    Serial.println("Stopped");
-  }
+  float dist = distance();
+  if (dist < 10 && dist > 1) {
+    s.write(100);
+  }else
+  s.write(0);
 
 
-
-
-  //  if (digitalRead(pinON)) {
-  //    int speed = 80; //speed to be used is 80/255
-  //    delay(1000);
-  //    forward(24, speed); //move forward 24 inches
-  //    delay(1000);
-  //    turnRight(1.08, speed); //turn right first parameter is tuned to make it turn exactly 90 degrees
-  //    delay(1000);
-  //    forward(24, speed); //move forward 24 inches
-  //    delay(1000);
-  //    turnLeft(1.14, speed); //turn left first parameter is tuned to make it turn exactly 90 degrees
-  //    delay(2000);
-  //    digitalWrite(pinCW_R, LOW); //right wheel stop spinning clockwise
-  //    digitalWrite(pinCC_L, LOW); //left wheel stop spinning counter-clockwise
-  //    digitalWrite(pinCW_L, LOW); //left wheel stop spinning clockwise
-  //    digitalWrite(pinCC_R, LOW); //right wheel stop spinning counter-clockwise
-  //  }else{
+  //
+  //  pixy.ccc.getBlocks();
+  //
+  //  if (pixy.ccc.numBlocks) {
+  //    if (pixy.ccc.blocks[0].m_x < 130) {
+  //      if (pixy.ccc.blocks[0].m_x < 70)
+  //        turnRight(.03, 180);
+  //      else
+  //        turnRight(.01, 180);
+  //    } else if (pixy.ccc.blocks[0].m_x > 170) {
+  //      if (pixy.ccc.blocks[0].m_x > 220)
+  //        turnLeft(.03, 180);
+  //      else
+  //        turnLeft(.01, 180);
+  //    }
+  //  } else {
   //    digitalWrite(pinCW_R, LOW);
   //    digitalWrite(pinCC_L, LOW);
   //    digitalWrite(pinCW_L, LOW);
   //    digitalWrite(pinCC_R, LOW);
+  //    Serial.println("Stopped");
   //  }
 
 }
 
+float distance() {
+  digitalWrite(pinTrig, LOW);
+  delayMicroseconds(5);
+  digitalWrite(pinTrig, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(pinTrig, LOW);
+  float dist = pulseIn(pinEcho, HIGH);
+  return (dist / 2.0) / 29.1;
+}
 
 void forward(float dist, int sp) { //distance is in inches and sp is speed from 0-255
   enc_count_R = 0;
